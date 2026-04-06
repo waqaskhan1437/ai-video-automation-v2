@@ -113,31 +113,26 @@ jobs:
       - name: Upload to ${{ inputs.host || 'litterbox' }}
         id: upload
         run: |
-          echo "Uploading video to ${{ inputs.host || 'litterbox' }}..."
+          echo "Uploading video to ${{ inputs.host }}..."
           ls -lh merged_video.mp4
           
-          HOST='${{ inputs.host }}'
-          if [ "$HOST" = "litterbox" ]; then
+          if [ "${{ inputs.host }}" = "litterbox" ]; then
             echo "Using Litterbox API"
-            curl -v -s -F 'reqtype=fileUpload' -F 'time=72h' -F "fileToUpload=@merged_video.mp4" "https://litterbox.catbox.moe/resources/internals/api.php" 2>&1 | tee curl_output.txt
+            RESPONSE=$(curl -s -F 'reqtype=fileUpload' -F 'time=72h' -F "fileToUpload=@merged_video.mp4" "https://litterbox.catbox.moe/resources/internals/api.php")
           else
             echo "Using Catbox API"
-            curl -v -s -F 'reqtype=fileUpload' -F "fileToUpload=@merged_video.mp4" "https://catbox.moe/user/api.php" 2>&1 | tee curl_output.txt
+            RESPONSE=$(curl -s -F 'reqtype=fileUpload' -F "fileToUpload=@merged_video.mp4" "https://catbox.moe/user/api.php")
           fi
           
-          # Extract just the response body (after headers)
-          grep -v "^< " curl_output.txt > upload_response.txt
+          echo "Response: $RESPONSE"
+          echo "$RESPONSE" > upload_response.txt
           
-          echo "Processed response:"
-          cat upload_response.txt
-          
-          URL=$(cat upload_response.txt | tr -d '\n\r\t ')
-          if echo "$URL" | grep -q "https://"; then
-            echo "$URL" > upload_url.txt
-            echo "SUCCESS: URL captured"
+          if echo "$RESPONSE" | grep -q "^https://"; then
+            echo "$RESPONSE" > upload_url.txt
+            echo "SUCCESS"
           else
-            echo "Check artifacts" > upload_url.txt
-            echo "WARNING: Response may not be a valid URL"
+            echo "Check artifacts for video" > upload_url.txt
+            echo "WARNING: Response may not be valid URL"
           fi
         continue-on-error: true
       
