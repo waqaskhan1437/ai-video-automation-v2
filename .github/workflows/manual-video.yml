@@ -116,24 +116,27 @@ jobs:
           echo "Uploading video to ${{ inputs.host || 'litterbox' }}..."
           ls -lh merged_video.mp4
           
-          if [ '${{ inputs.host }}' = 'litterbox' ]; then
+          HOST='${{ inputs.host }}'
+          if [ "$HOST" = "litterbox" ]; then
             echo "Using Litterbox API"
-            curl -s -S --form "reqtype=fileUpload" --form "time=72h" --form "fileToUpload=@merged_video.mp4" "https://litterbox.catbox.moe/resources/internals/api.php" > upload_response.txt
+            curl -v -s -F 'reqtype=fileUpload' -F 'time=72h' -F "fileToUpload=@merged_video.mp4" "https://litterbox.catbox.moe/resources/internals/api.php" 2>&1 | tee curl_output.txt
           else
             echo "Using Catbox API"
-            curl -s -S --form "reqtype=fileUpload" --form "fileToUpload=@merged_video.mp4" "https://catbox.moe/user/api.php" > upload_response.txt
+            curl -v -s -F 'reqtype=fileUpload' -F "fileToUpload=@merged_video.mp4" "https://catbox.moe/user/api.php" 2>&1 | tee curl_output.txt
           fi
           
-          echo "Raw response:"
-          cat upload_response.txt
-          echo ""
+          # Extract just the response body (after headers)
+          grep -v "^< " curl_output.txt > upload_response.txt
           
-          URL=$(cat upload_response.txt | tr -d '\n\r')
+          echo "Processed response:"
+          cat upload_response.txt
+          
+          URL=$(cat upload_response.txt | tr -d '\n\r\t ')
           if echo "$URL" | grep -q "https://"; then
             echo "$URL" > upload_url.txt
             echo "SUCCESS: URL captured"
           else
-            echo "$URL" > upload_url.txt
+            echo "Check artifacts" > upload_url.txt
             echo "WARNING: Response may not be a valid URL"
           fi
         continue-on-error: true
