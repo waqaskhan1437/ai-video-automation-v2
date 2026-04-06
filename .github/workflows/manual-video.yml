@@ -122,9 +122,10 @@ jobs:
             echo "$URL" > upload_url.txt
             echo "Upload URL captured: $URL"
           else
-            echo "Failed to get URL" > upload_url.txt
+            echo "Check artifacts for video" > upload_url.txt
             echo "Warning: Could not extract upload URL"
           fi
+        continue-on-error: true
       
       - name: Get Upload URL
         id: get-url
