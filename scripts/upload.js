@@ -1,58 +1,79 @@
 const axios = require('axios');
 const fs = require('fs');
+const FormData = require('form-data');
 
-const CATBOX_API_URL = 'https://catbox.moe/user/api.php';
+const CATBOX_API = 'https://catbox.moe/user/api.php';
+const LITTERBOX_API = 'https://litterbox.catbox.moe/resources/internals/api.php';
 
-async function uploadToCatbox(filepath) {
-  console.log(`Uploading ${filepath} to Catbox...`);
+const USE_LITTERBOX = process.argv[2] === 'litterbox';
+
+async function uploadToCatbox(filename) {
+  const apiUrl = USE_LITTERBOX ? LITTERBOX_API : CATBOX_API;
+  const fileStream = fs.createReadStream(filename);
+  const stats = fs.statSync(filename);
+  
+  const formData = new FormData();
+  formData.append('reqtype', 'fileUpload');
+  
+  if (USE_LITTERBOX) {
+    formData.append('time', '72h');
+  }
+  
+  formData.append('fileToUpload', fileStream, {
+    filename: filename,
+    contentType: 'video/mp4',
+    knownLength: stats.size
+  });
+  
+  console.log(`Uploading to ${USE_LITTERBOX ? 'Litterbox' : 'Catbox'}...`);
+  console.log(`File: ${filename} (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
   
   try {
-    const fileStream = fs.createReadStream(filepath);
-    const stats = fs.statSync(filepath);
-    
-    const formData = new FormData();
-    formData.append('reqtype', 'fileUpload');
-    formData.append('fileToUpload', fileStream, {
-      filename: path.basename(filepath),
-      contentType: 'video/mp4',
-      knownLength: stats.size
-    });
-    
-    const response = await axios.post(CATBOX_API_URL, formData, {
-      headers: formData.getHeaders(),
+    const response = await axios.post(apiUrl, formData, {
+      headers: {
+        ...formData.getHeaders()
+      },
       maxBodyLength: Infinity,
-      maxContentLength: Infinity
+      maxContentLength: Infinity,
+      timeout: 120000
     });
     
-    if (response.data && response.data.startsWith('https://')) {
-      console.log(`✓ Upload successful: ${response.data}`);
-      return response.data;
+    const url = response.data.trim();
+    
+    if (url.startsWith('https://')) {
+      console.log(`Upload successful: ${url}`);
+      return url;
     } else {
-      throw new Error(`Unexpected response: ${response.data}`);
+      console.error(`Upload failed: ${response.data}`);
+      throw new Error(`Invalid response: ${response.data}`);
     }
   } catch (error) {
-    console.error(`✗ Upload failed:`, error.message);
+    console.error(`Upload error: ${error.message}`);
+    
+    if (error.response) {
+      console.error(`Status: ${error.response.status}`);
+      console.error(`Data: ${error.response.data}`);
+    }
+    
     throw error;
   }
 }
 
-const filepath = process.argv[2];
+const filename = process.argv[3] || 'merged_video.mp4';
 
-if (!filepath) {
-  console.error('Usage: node upload.js <filepath>');
+if (!fs.existsSync(filename)) {
+  console.error(`File not found: ${filename}`);
   process.exit(1);
 }
 
-if (!fs.existsSync(filepath)) {
-  console.error(`File not found: ${filepath}`);
-  process.exit(1);
-}
-
-uploadToCatbox(filepath)
+uploadToCatbox(filename)
   .then(url => {
-    console.log('\n✓ Catbox URL:', url);
+    console.log('\n=== RESULT ===');
+    console.log(`URL=${url}`);
+    process.exit(0);
   })
   .catch(error => {
-    console.error('Error:', error.message);
+    console.error('\n=== ERROR ===');
+    console.error(error.message);
     process.exit(1);
   });
