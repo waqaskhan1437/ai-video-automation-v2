@@ -110,35 +110,23 @@ jobs:
         run: |
           ls -lh merged_video.mp4
       
-      - name: Upload to ${{ inputs.host || 'litterbox' }}
+      - name: Upload to 0x0.st
         id: upload
         run: |
-          echo "Uploading video to ${{ inputs.host }}..."
+          echo "Uploading video to 0x0.st..."
           ls -lh merged_video.mp4
           
-          if [ "${{ inputs.host }}" = "litterbox" ]; then
-            echo "Using Litterbox API"
-            curl -s -F 'reqtype=fileUpload' -F 'time=72h' -F "fileToUpload=@merged_video.mp4" "https://litterbox.catbox.moe/resources/internals/api.php" > upload_response.txt
-          else
-            echo "Using Catbox API"
-            curl -s -F 'reqtype=fileUpload' -F "fileToUpload=@merged_video.mp4" "https://catbox.moe/user/api.php" > upload_response.txt
-          fi
+          RESPONSE=$(curl -s -F "file=@merged_video.mp4" https://0x0.st)
           
-          echo "---Response Start---"
-          cat upload_response.txt
-          echo "---Response End---"
-          wc -c upload_response.txt
+          echo "Response: $RESPONSE"
           
-          # Check if response starts with https
-          head -c 8 upload_response.txt > url_check.txt
-          if grep -q "https:" url_check.txt; then
-            cp upload_response.txt upload_url.txt
-            echo "SUCCESS: Valid URL received"
+          if echo "$RESPONSE" | grep -q "^https://"; then
+            echo "$RESPONSE" > upload_url.txt
+            echo "SUCCESS: Uploaded to 0x0.st"
           else
-            echo "Check artifacts for video" > upload_url.txt
-            echo "WARNING: Response doesn't start with https"
+            echo "https://github.com/waqaskhan1437/ai-video-automation-v2/actions/runs/${{ github.run_id }}" > upload_url.txt
+            echo "Using GitHub Actions URL as fallback"
           fi
-        continue-on-error: true
       
       - name: Get Upload URL
         id: get-url
@@ -154,7 +142,7 @@ jobs:
           script: |
             const prompt = '${{ inputs.prompt }}' || 'Random creative animation';
             const numClips = parseInt('${{ inputs.num_clips }}') || 3;
-            const host = '${{ inputs.host }}' || 'litterbox';
+            const host = '0x0.st';
             
             const videoUrl = '${{ steps.get-url.outputs.video_url }}' || 'Pending upload - check artifacts';
             
