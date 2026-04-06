@@ -117,31 +117,33 @@ jobs:
           
           if [ '${{ inputs.host }}' = 'litterbox' ]; then
             API_URL="https://litterbox.catbox.moe/resources/internals/api.php"
-            curl -s -S -X POST "$API_URL" -F "reqtype=fileUpload" -F "time=72h" -F "fileToUpload=@merged_video.mp4" > upload_response.txt 2>&1
+            curl -s -S -X POST "$API_URL" -F "reqtype=fileUpload" -F "time=72h" -F "fileToUpload=@merged_video.mp4"
           else
             API_URL="https://catbox.moe/user/api.php"
-            curl -s -S -X POST "$API_URL" -F "reqtype=fileUpload" -F "fileToUpload=@merged_video.mp4" > upload_response.txt 2>&1
-          fi
+            curl -s -S -X POST "$API_URL" -F "reqtype=fileUpload" -F "fileToUpload=@merged_video.mp4"
+          fi > upload_response.txt 2>&1
           
           echo "Raw response:"
           cat upload_response.txt
           
-          if grep -q "^https://" upload_response.txt; then
-            URL=$(cat upload_response.txt)
+          # Try different patterns to extract URL
+          URL=$(cat upload_response.txt)
+          if echo "$URL" | grep -q "https://"; then
             echo "$URL" > upload_url.txt
-            echo "Upload successful: $URL"
+            echo "Upload successful"
           else
-            echo "Check artifacts for video" > upload_url.txt
-            echo "Warning: Upload may have failed"
+            echo "$URL" > upload_url.txt
+            echo "Warning: Response may not contain URL"
           fi
         continue-on-error: true
       
       - name: Get Upload URL
         id: get-url
         run: |
+          echo "Reading URL from file:"
+          cat upload_url.txt
           URL=$(cat upload_url.txt)
           echo "video_url=$URL" >> $GITHUB_OUTPUT
-          echo "Video URL: $URL"
       
       - name: Create GitHub Issue
         uses: actions/github-script@v7
