@@ -118,21 +118,25 @@ jobs:
           
           if [ "${{ inputs.host }}" = "litterbox" ]; then
             echo "Using Litterbox API"
-            RESPONSE=$(curl -s -F 'reqtype=fileUpload' -F 'time=72h' -F "fileToUpload=@merged_video.mp4" "https://litterbox.catbox.moe/resources/internals/api.php")
+            curl -s -F 'reqtype=fileUpload' -F 'time=72h' -F "fileToUpload=@merged_video.mp4" "https://litterbox.catbox.moe/resources/internals/api.php" > upload_response.txt
           else
             echo "Using Catbox API"
-            RESPONSE=$(curl -s -F 'reqtype=fileUpload' -F "fileToUpload=@merged_video.mp4" "https://catbox.moe/user/api.php")
+            curl -s -F 'reqtype=fileUpload' -F "fileToUpload=@merged_video.mp4" "https://catbox.moe/user/api.php" > upload_response.txt
           fi
           
-          echo "Response: $RESPONSE"
-          echo "$RESPONSE" > upload_response.txt
+          echo "---Response Start---"
+          cat upload_response.txt
+          echo "---Response End---"
+          wc -c upload_response.txt
           
-          if echo "$RESPONSE" | grep -q "^https://"; then
-            echo "$RESPONSE" > upload_url.txt
-            echo "SUCCESS"
+          # Check if response starts with https
+          head -c 8 upload_response.txt > url_check.txt
+          if grep -q "https:" url_check.txt; then
+            cp upload_response.txt upload_url.txt
+            echo "SUCCESS: Valid URL received"
           else
             echo "Check artifacts for video" > upload_url.txt
-            echo "WARNING: Response may not be valid URL"
+            echo "WARNING: Response doesn't start with https"
           fi
         continue-on-error: true
       
