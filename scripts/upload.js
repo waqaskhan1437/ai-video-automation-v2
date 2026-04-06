@@ -8,7 +8,7 @@ const USE_LITTERBOX = process.argv[2] === 'litterbox';
 const filename = process.argv[3] || 'merged_video.mp4';
 
 if (!fs.existsSync(filename)) {
-  console.error(`File not found: ${filename}`);
+  console.error(`ERROR: File not found: ${filename}`);
   process.exit(1);
 }
 
@@ -20,45 +20,35 @@ console.log(`Uploading to: ${USE_LITTERBOX ? 'Litterbox' : 'Catbox'}`);
 
 try {
   const absolutePath = fs.realpathSync(filename);
-  console.log(`Real path: ${absolutePath}`);
   
-  const cmd = [
-    'curl', '-s', '-S', '-w', '\\n%{http_code}',
-    '-F', `reqtype=fileUpload`,
-    ...(USE_LITTERBOX ? ['-F', 'time=72h'] : []),
-    '-F', `fileToUpload=@${absolutePath}`,
-    apiUrl
-  ];
+  const cmd = `curl -s -S -X POST "${apiUrl}" -F "reqtype=fileUpload" ${USE_LITTERBOX ? '-F "time=72h"' : ''} -F "fileToUpload=@${absolutePath}"`;
   
-  console.log('Executing curl upload...');
+  console.log('Running curl command...');
   
-  const response = execSync(cmd.join(' '), { 
+  const response = execSync(cmd, { 
     maxBuffer: 50 * 1024 * 1024,
     timeout: 120000,
-    encoding: 'utf8'
+    encoding: 'utf8',
+    shell: true
   });
   
-  const lines = response.trim().split('\n');
-  const httpCode = lines.pop();
-  const url = lines.join('\n').trim();
+  const result = response.trim();
+  console.log('Raw response:', result);
   
-  console.log(`HTTP Code: ${httpCode}`);
-  console.log(`Response: ${url}`);
-  
-  if (httpCode === '200' && url.startsWith('https://')) {
-    console.log('\n=== SUCCESS ===');
-    console.log('URL=' + url);
+  if (result && result.startsWith('https://')) {
+    console.log('SUCCESS: Upload URL found');
+    console.log('URL=' + result);
     process.exit(0);
+  } else if (result.includes('error') || result.includes('Error')) {
+    console.error('ERROR: Server returned error:', result);
+    process.exit(1);
   } else {
-    console.error('\n=== ERROR ===');
-    console.error('Invalid response:', url);
-    console.error('HTTP Code:', httpCode);
+    console.error('ERROR: Unexpected response:', result);
     process.exit(1);
   }
   
 } catch (error) {
-  console.error('\n=== EXCEPTION ===');
-  console.error(error.message);
+  console.error('EXCEPTION:', error.message);
   if (error.stderr) {
     console.error('stderr:', error.stderr.toString());
   }
