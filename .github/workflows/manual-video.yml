@@ -19,9 +19,7 @@ on:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    outputs:
-      demo_mode: ${{ steps.check_demo.outputs.demo_mode }}
+    timeout-minutes: 30
     
     steps:
       - name: Checkout
@@ -32,23 +30,14 @@ jobs:
         with:
           node-version: '20'
       
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      
       - name: Install Dependencies
         run: npm install axios form-data
       
       - name: Generate Clips
-        env:
-          MAGIC_HOUR_API_KEY: ${{ secrets.MAGIC_HOUR_API_KEY }}
         run: node scripts/generateClips.js "${{ inputs.prompt }}" ${{ inputs.num_clips }}
-      
-      - name: Check if Demo Mode
-        id: check_demo
-        run: |
-          if grep -q '"demo": true' clips.json; then
-            echo "demo_mode=true" >> $GITHUB_OUTPUT
-          else
-            echo "demo_mode=false" >> $GITHUB_OUTPUT
-          fi
-          cat clips.json
       
       - name: Upload Clips Info
         uses: actions/upload-artifact@v4
@@ -58,53 +47,17 @@ jobs:
             clips.json
             clips/
 
-  demo-notice:
-    runs-on: ubuntu-latest
-    needs: generate
-    if: needs.generate.outputs.demo_mode == 'true'
-    
-    steps:
-      - name: Download Clips
-        uses: actions/download-artifact@v4
-        with:
-          name: clips-info
-          path: .
-      
-      - name: Show Setup Instructions
-        run: |
-          echo "# DEMO MODE - SETUP REQUIRED"
-          echo ""
-          echo "## To generate real AI videos:"
-          echo "1. Get Magic Hour API Key: https://magichour.ai/settings/developer"
-          echo "2. Go to your repo Settings > Secrets > Actions"
-          echo "3. Add new secret: \`MAGIC_HOUR_API_KEY\`"
-          echo "4. Re-run this workflow"
-          echo ""
-          echo "## Free Credits: 400 initial + 100 daily"
-          echo ""
-          echo "## Generated Placeholders:"
-          cat clips.json
-      
-      - name: Create Setup Issue
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'Setup Required: Add Magic Hour API Key',
-              body: `## Setup Required\n\nTo generate real AI videos, you need to add a Magic Hour API key.\n\n### Steps:\n1. Get your free API key: https://magichour.ai/settings/developer\n2. Go to **Settings > Secrets > Actions** in this repo\n3. Click **"New repository secret"**\n4. Name: \`MAGIC_HOUR_API_KEY\`\n5. Value: Paste your API key\n6. Click **"Add secret"**\n7. Re-run the workflow\n\n### Free Credits:\n- 400 initial credits\n- 100 additional daily credits\n\n---\n*This issue was auto-created by the AI Video Automation workflow.*`
-            });
-
   merge:
     needs: generate
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: needs.generate.outputs.demo_mode != 'true'
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       
       - name: Download Clips Info
         uses: actions/download-artifact@v4
@@ -112,40 +65,24 @@ jobs:
           name: clips-info
           path: .
       
-      - name: Download Clips
-        run: |
-          mkdir -p clips
-          cat clips.json | jq -c '.[]' | while read clip; do
-            url=$(echo $clip | jq -r '.url')
-            filename=$(echo $clip | jq -r '.filename')
-            if [ "$url" != "null" ] && [ -n "$url" ]; then
-              curl -sL -o "clips/$filename" "$url"
-            fi
-          done
-      
-      - name: Setup FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
-      
       - name: Merge Videos
         run: |
-          ls -v clips/*.mp4 > concat.txt 2>/dev/null || true
-          if [ -s concat.txt ]; then
-            sed -i 's/^/file /' concat.txt
-            ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_video.mp4 2>/dev/null || echo "No real video files"
-          fi
-          ls -lh
+          mkdir -p clips
+          ls -v clips/clip_*.mp4 > concat.txt 2>/dev/null || ls -v clips/*.mp4 > concat.txt
+          sed -i 's/^/file /' concat.txt
+          cat concat.txt
+          ffmpeg -y -f concat -safe 0 -i concat.txt -c copy merged_video.mp4
+          ls -lh merged_video.mp4
       
       - name: Upload Merged Video
         uses: actions/upload-artifact@v4
         with:
           name: merged-video
           path: merged_video.mp4
-        continue-on-error: true
 
   upload:
     needs: merge
     runs-on: ubuntu-latest
-    if: needs.merge.result == 'success'
     
     steps:
       - name: Download Video
@@ -153,20 +90,8 @@ jobs:
         with:
           name: merged-video
           path: .
-        continue-on-error: true
-      
-      - name: Check Video File
-        id: check_video
-        run: |
-          if [ -f merged_video.mp4 ]; then
-            echo "has_video=true" >> $GITHUB_OUTPUT
-            ls -lh merged_video.mp4
-          else
-            echo "has_video=false" >> $GITHUB_OUTPUT
-          fi
       
       - name: Upload to Catbox
-        if: steps.check_video.outputs.has_video == 'true'
         id: catbox
         run: |
           response=$(curl -s -F "reqtype=fileUpload" -F "fileToUpload=@merged_video.mp4" https://catbox.moe/user/api.php)
@@ -175,17 +100,27 @@ jobs:
           echo "Video URL: $response"
       
       - name: Create GitHub Issue
-        if: steps.check_video.outputs.has_video == 'true'
         uses: actions/github-script@v7
         with:
           script: |
             const url = process.env.CATBOX_URL;
-            const prompt = '${{ inputs.prompt }}' || 'Random creative prompt';
+            const prompt = '${{ inputs.prompt }}' || 'Random creative animation';
             const numClips = ${{ inputs.num_clips || 3 }};
             
             github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `AI Video - ${new Date().toLocaleDateString()}`,
-              body: `## AI Video Generated\n\n**Prompt:** ${prompt}\n**Clips:** ${numClips} x 5s = ${numClips * 5}s\n**URL:** ${url}\n\n---\n*Generated by GitHub Actions*`
+              body: `## AI Video Generated\n\n**Prompt:** ${prompt}\n**Clips:** ${numClips} x 10s = ${numClips * 10}s\n**Type:** Ken Burns Animation Effect\n**URL:** ${url}\n\n---\n*Generated by AI Video Automation (Open Source)*`
             });
+      
+      - name: Summary
+        run: |
+          echo "## Video Generated Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Prompt | ${{ inputs.prompt || 'Random' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Duration | ${ { inputs.num_clips || 3 } * 10}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| Effect | Ken Burns Animation |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Video URL** | **${{ env.CATBOX_URL }}** |" >> $GITHUB_STEP_SUMMARY

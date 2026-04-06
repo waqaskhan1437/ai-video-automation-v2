@@ -1,15 +1,15 @@
 # AI Video Automation
 
-Generate AI videos using **Magic Hour API**, merge clips into 1-minute videos, upload to **Catbox**, and schedule automated posting - all running on **GitHub Actions**.
+Generate AI videos using **FREE Open Source tools** - Ken Burns animation effect with FFmpeg. No API keys needed, no GPU required, 100% free!
 
 ## Features
 
-- **AI Video Generation** - Magic Hour API (6 clips × 5 seconds = 30 seconds)
-- **Auto Merge** - FFmpeg merging via GitHub Actions
-- **Catbox Upload** - Free file hosting
-- **Scheduled Automation** - Daily, weekly, or on-demand
-- **GitHub Pages Dashboard** - View generated videos
-- **No Server Needed** - 100% serverless with GitHub Actions
+- **100% FREE** - No API keys, no paid services
+- **Open Source** - Uses FFmpeg for video creation
+- **Ken Burns Effect** - Professional zoom/pan animations
+- **No GPU Required** - Runs on any machine
+- **GitHub Actions** - Fully automated pipeline
+- **Catbox Upload** - Free video hosting
 
 ## How It Works
 
@@ -17,69 +17,74 @@ Generate AI videos using **Magic Hour API**, merge clips into 1-minute videos, u
 ┌─────────────────────────────────────────────────────────────────┐
 │                    GITHUB ACTIONS (Backend)                      │
 │  ┌─────────────┐  ┌─────────────┐  ┌────────────────────────┐  │
-│  │ Magic Hour  │→ │ FFmpeg      │→ │ Upload to Catbox        │  │
-│  │ API Gen     │  │ Merge       │  │ Get URL                 │  │
+│  │ Generate    │→ │ Ken Burns   │→ │ Merge with FFmpeg       │  │
+│  │ SVG Images │  │ Animation   │  │ Concatenate clips       │  │
 │  └─────────────┘  └─────────────┘  └────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                           ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                    GITHUB PAGES (Frontend)                        │
-│  ┌─────────────┐  ┌─────────────┐  ┌────────────────────────┐  │
-│  │ Video       │  │ Schedule    │  │ View Generated Videos   │  │
-│  │ Player      │  │ Manager     │  │ in GitHub Issues       │  │
-│  └─────────────┘  └─────────────┘  └────────────────────────┘  │
+│                                                          ↓      │
+│  ┌─────────────┐  ┌─────────────────────────────────────┐  │
+│  │ Upload to  │  │ GitHub Issue (Video URL)             │  │
+│  │ Catbox     │  │ Auto-created with download link      │  │
+│  └─────────────┘  └─────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+## Technologies Used
+
+| Tool | Purpose | License |
+|------|---------|---------|
+| **FFmpeg** | Video creation & merging | LGPL/GPL |
+| **Node.js** | Script orchestration | MIT |
+| **SVG** | Image generation | Open |
+| **Catbox** | Free video hosting | Free |
+
 ## Quick Start
 
-### 1. Fork or Use This Template
+### 1. Fork This Repository
 
 Click **"Use this template"** on GitHub to create your own copy.
 
-### 2. Get Magic Hour API Key (Required)
-
-1. Go to: https://magichour.ai/settings/developer
-2. Sign up / Login
-3. Create a new API Key
-4. Copy the key
-
-### 3. Add API Key to GitHub Secrets
-
-1. Go to your repository **Settings**
-2. Click **Secrets and variables** > **Actions**
-3. Click **New repository secret**
-4. Name: `MAGIC_HOUR_API_KEY`
-5. Value: Paste your API key
-6. Click **Add secret**
-
-### 4. Enable GitHub Actions
+### 2. Enable GitHub Actions
 
 Go to your repository's **Actions** tab and enable workflows.
 
-### 5. Generate Your First Video
+### 3. Generate Your First Video
 
 1. Go to **Actions** tab
 2. Click **"Manual Video Generation"** workflow
 3. Click **"Run workflow"**
-4. Enter a prompt or leave empty for random
+4. Enter a prompt (or leave empty for random)
 5. Click **"Run workflow"**
 
-### 6. Wait for the Video
+### 4. Wait for the Video
 
 The workflow will:
-1. Generate video clips using Magic Hour API (2-5 minutes)
-2. Merge them into 1 video
-3. Upload to Catbox (free hosting)
-4. Create a GitHub Issue with the video URL
+1. Generate gradient images with your prompt text
+2. Apply Ken Burns animation effect (zoom/pan)
+3. Merge 6 clips into 1 video (~60 seconds)
+4. Upload to Catbox (free hosting)
+5. Create a GitHub Issue with the video URL
 
-## Free Credits
+## Video Generation Method
 
-| Service | Free Limit | Notes |
-|---------|------------|-------|
-| **Magic Hour** | 400 initial + 100/day | Requires signup |
-| **Catbox** | Unlimited | Files stored 72h (free) |
-| **GitHub Actions** | 2000 min/month | Free tier |
+### Ken Burns Effect Animation
+
+The system creates professional-looking videos using:
+
+1. **SVG Images** - Gradient backgrounds with prompt text
+2. **Zoom/Pan Animation** - Ken Burns effect using FFmpeg
+3. **Effects** - 
+   - Zoom In
+   - Zoom Out
+   - Pan Left
+   - Pan Up
+
+### Example Output
+
+Each video consists of:
+- **6 clips** × **10 seconds** = **60 seconds total**
+- Resolution: 1280×720 (720p)
+- Frame rate: 30fps
+- Effect: Smooth Ken Burns zoom/pan
 
 ## Workflows
 
@@ -87,7 +92,6 @@ The workflow will:
 |----------|---------|-------------|
 | **Manual Video** | Button click | Generate video on-demand |
 | **Scheduled Video** | Daily at 9 AM | Auto-generate daily video |
-| **Video Pipeline** | API call | Full pipeline with notifications |
 
 ## Project Structure
 
@@ -96,13 +100,11 @@ ai-video-automation/
 ├── .github/
 │   └── workflows/
 │       ├── manual-video.yml      # On-demand generation
-│       ├── scheduled-video.yml   # Daily auto-generation
-│       └── video-pipeline.yml    # Full pipeline
+│       └── scheduled-video.yml  # Daily auto-generation
 ├── scripts/
-│   ├── generateClips.js          # Magic Hour API integration
-│   └── upload.js                # Catbox upload
+│   └── generateClips.js        # Video generation logic
 ├── frontend/
-│   ├── index.html                # Dashboard UI
+│   ├── index.html               # Dashboard UI
 │   └── styles.css
 ├── package.json
 └── README.md
@@ -118,74 +120,72 @@ cd ai-video-automation
 # Install dependencies
 npm install
 
-# Set API key
-export MAGIC_HOUR_API_KEY="your_api_key_here"
+# Install FFmpeg (Ubuntu/Debian)
+sudo apt-get install ffmpeg
 
 # Generate video with custom prompt
-node scripts/generateClips.js "A beautiful sunset over the ocean" 6
+node scripts/generateClips.js "A sunset over the ocean" 6
 
 # Generate random video
 node scripts/generateClips.js
 
-# Upload to Catbox
-curl -F "reqtype=fileUpload" -F "fileToUpload=@merged_video.mp4" https://catbox.moe/user/api.php
+# The video will be in clips/ folder
+ls -la clips/
+
+# Merge clips manually
+ffmpeg -f concat -safe 0 -i <(for f in clips/*.mp4; do echo "file '$f'"; done) -c copy merged.mp4
 ```
 
-## Dashboard
+## Customization
 
-Open `frontend/index.html` in a browser to view the dashboard. You can also host it on GitHub Pages:
+### Change Number of Clips
 
-1. Go to **Settings > Pages**
-2. Source: `main` branch, `/frontend` folder
-3. Save
-
-## Scheduling
-
-### Daily (Default)
-Scheduled to run every day at 9:00 AM UTC.
-
-### Custom Schedule
-Edit `.github/workflows/scheduled-video.yml`:
-
-```yaml
-on:
-  schedule:
-    - cron: '0 9 * * *'  # 9 AM daily
-    # Or: '0 */6 * * *'  # Every 6 hours
+Edit `generateClips.js`:
+```javascript
+const NUM_CLIPS = 6; // Change this
+const CLIP_DURATION = 10; // Change clip length (seconds)
 ```
 
-### Manual Trigger
-Use the **Actions** tab to trigger manually anytime.
+### Change Animation Effects
 
-## Video URLs
+The script automatically cycles through these effects:
+- `zoom_in` - Camera zooms into the image
+- `zoom_out` - Camera zooms out from the image
+- `pan_left` - Camera pans to the left
+- `pan_up` - Camera pans upward
 
-All generated video URLs are saved:
-1. In GitHub Issues (created automatically)
-2. In workflow run logs
-3. In the workflow summary
+### Add Custom Image Sources
 
-## Troubleshooting
+Modify `generateGradientImage()` to:
+- Use external image APIs
+- Download images from URLs
+- Use local image files
 
-### Video Generation Fails
-- Check Magic Hour API key is correct
-- Verify credits not exhausted
-- Check workflow logs for errors
-- Ensure API key is added to GitHub Secrets (not just environment variables)
+## No API Keys Required
 
-### Upload Fails
-- Catbox may have temporary issues
-- Try again after a few minutes
+This is completely free because it doesn't use:
+- ❌ No paid AI APIs
+- ❌ No GPU services
+- ❌ No subscription services
 
-### Workflow Timeout
-- Generation can take 5-10 minutes per clip
-- Magic Hour has queue times during peak hours
+It only uses:
+- ✅ FFmpeg (free, open source)
+- ✅ Catbox (free file hosting)
+- ✅ GitHub Actions (free tier: 2000 min/month)
 
-## Demo Mode
+## Limitations
 
-If you run the workflow without an API key, it will:
-1. Create placeholder files
-2. Show setup instructions
-3. Create a GitHub Issue with setup guide
+- Animation effect (Ken Burns) instead of AI video generation
+- SVG-based images with text overlay
+- No realistic scenes or characters
+- Resolution limited to 720p
+
+## For Realistic AI Videos
+
+If you need realistic AI-generated videos, consider:
+- **Magic Hour API** (400 free credits)
+- **Luma AI** (100 free credits/month)
+- **Runway ML** ($10 minimum)
 
 ## License
 
