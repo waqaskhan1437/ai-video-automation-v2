@@ -1,5 +1,9 @@
 name: Manual Video Generation
 
+permissions:
+  contents: read
+  issues: write
+
 on:
   workflow_dispatch:
     inputs:
