@@ -117,15 +117,21 @@ jobs:
           OUTPUT=$(node scripts/upload.js ${{ inputs.host || 'litterbox' }} merged_video.mp4 2>&1)
           echo "$OUTPUT"
           
-          if echo "$OUTPUT" | grep -q "URL="; then
-            URL=$(echo "$OUTPUT" | grep "^URL=" | cut -d'=' -f2)
-            echo "video_url=$URL" >> $GITHUB_OUTPUT
+          if echo "$OUTPUT" | grep -q "^URL="; then
+            URL=$(echo "$OUTPUT" | grep "^URL=" | sed 's/^URL=//')
+            echo "$URL" > upload_url.txt
             echo "Upload URL captured: $URL"
           else
-            echo "video_url=" >> $GITHUB_OUTPUT
+            echo "Failed to get URL" > upload_url.txt
             echo "Warning: Could not extract upload URL"
           fi
-        continue-on-error: true
+      
+      - name: Get Upload URL
+        id: get-url
+        run: |
+          URL=$(cat upload_url.txt)
+          echo "video_url=$URL" >> $GITHUB_OUTPUT
+          echo "Video URL: $URL"
       
       - name: Create GitHub Issue
         uses: actions/github-script@v7
@@ -135,7 +141,7 @@ jobs:
             const numClips = parseInt('${{ inputs.num_clips }}') || 3;
             const host = '${{ inputs.host }}' || 'litterbox';
             
-            const videoUrl = '${{ steps.upload.outputs.video_url }}' || 'Pending upload - check artifacts';
+            const videoUrl = '${{ steps.get-url.outputs.video_url }}' || 'Pending upload - check artifacts';
             
             github.rest.issues.create({
               owner: context.repo.owner,
@@ -154,4 +160,4 @@ jobs:
           echo "| Duration | ${{ inputs.num_clips || 3 }} x 10s |" >> $GITHUB_STEP_SUMMARY
           echo "| Effect | Ken Burns Animation |" >> $GITHUB_STEP_SUMMARY
           echo "| Host | ${{ inputs.host || 'litterbox' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Video URL** | **${{ steps.upload.outputs.video_url }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Video URL** | **${{ steps.get-url.outputs.video_url }}** |" >> $GITHUB_STEP_SUMMARY
