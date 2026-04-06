@@ -114,16 +114,25 @@ jobs:
         id: upload
         run: |
           echo "Uploading video to ${{ inputs.host || 'litterbox' }}..."
-          OUTPUT=$(node scripts/upload.js ${{ inputs.host || 'litterbox' }} merged_video.mp4 2>&1)
-          echo "$OUTPUT"
           
-          if echo "$OUTPUT" | grep -q "^URL="; then
-            URL=$(echo "$OUTPUT" | grep "^URL=" | sed 's/^URL=//')
+          if [ '${{ inputs.host }}' = 'litterbox' ]; then
+            API_URL="https://litterbox.catbox.moe/resources/internals/api.php"
+            curl -s -S -X POST "$API_URL" -F "reqtype=fileUpload" -F "time=72h" -F "fileToUpload=@merged_video.mp4" > upload_response.txt 2>&1
+          else
+            API_URL="https://catbox.moe/user/api.php"
+            curl -s -S -X POST "$API_URL" -F "reqtype=fileUpload" -F "fileToUpload=@merged_video.mp4" > upload_response.txt 2>&1
+          fi
+          
+          echo "Raw response:"
+          cat upload_response.txt
+          
+          if grep -q "^https://" upload_response.txt; then
+            URL=$(cat upload_response.txt)
             echo "$URL" > upload_url.txt
-            echo "Upload URL captured: $URL"
+            echo "Upload successful: $URL"
           else
             echo "Check artifacts for video" > upload_url.txt
-            echo "Warning: Could not extract upload URL"
+            echo "Warning: Upload may have failed"
           fi
         continue-on-error: true
       
