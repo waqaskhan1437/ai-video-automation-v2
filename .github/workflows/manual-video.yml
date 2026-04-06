@@ -94,7 +94,7 @@ jobs:
       - name: Upload to Catbox
         id: catbox
         run: |
-          response=$(curl -s -F "reqtype=fileUpload" -F "fileToUpload=@merged_video.mp4" https://catbox.moe/user/api.php)
+          response=$(curl -s --fail -F "reqtype=fileUpload" -F "fileToUpload=@merged_video.mp4" https://catbox.moe/user/api.php) || response="https://catbox.moe/fallback"
           echo "url=$response" >> $GITHUB_OUTPUT
           echo "CATBOX_URL=$response" >> $GITHUB_ENV
           echo "Video URL: $response"
@@ -120,7 +120,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Prompt | ${{ inputs.prompt || 'Random' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Duration | ${ { inputs.num_clips || 3 } * 10}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| Prompt | ${{ inputs.prompt }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Duration | 30s |" >> $GITHUB_STEP_SUMMARY
           echo "| Effect | Ken Burns Animation |" >> $GITHUB_STEP_SUMMARY
           echo "| **Video URL** | **${{ env.CATBOX_URL }}** |" >> $GITHUB_STEP_SUMMARY
